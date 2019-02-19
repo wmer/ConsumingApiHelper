@@ -2,6 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Description>Utilitário para consumir api JSON</Description>
+    <PackageProjectUrl>https://github.com/wmer/ConsumingApiHelper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/wmer/ConsumingApiHelper</RepositoryUrl>
+    <PackageTags>api, json</PackageTags>
+    <Copyright>William Santana</Copyright>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
