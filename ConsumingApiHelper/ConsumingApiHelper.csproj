@@ -8,6 +8,7 @@
     <PackageTags>api, json</PackageTags>
     <Copyright>William Santana</Copyright>
     <RepositoryType>git</RepositoryType>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

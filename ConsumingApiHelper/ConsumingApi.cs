@@ -1,5 +1,4 @@
-﻿using ConsumingApiHelper.Bulders;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -20,7 +19,7 @@ namespace ConsumingApiHelper {
             _client.DefaultRequestHeaders.Accept.Add(mediaType);
         }
 
-        public void Authenticate<T>(string url, T obj) {
+        public void Authenticate(string url, object obj) {
             var response = _client.PostAsync(url, ObjectToHttpContent(obj)).Result;
             if (response.IsSuccessStatusCode) {
                 var responseContent = response.Content.ReadAsStringAsync().Result;
