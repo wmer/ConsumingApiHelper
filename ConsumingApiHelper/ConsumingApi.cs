@@ -19,8 +19,8 @@ namespace ConsumingApiHelper {
             _client.DefaultRequestHeaders.Accept.Add(mediaType);
         }
 
-        public void Authenticate(string url, object obj) {
-            var response = _client.PostAsync(url, ObjectToHttpContent(obj)).Result;
+        public void Authenticate(string endPoint, object obj) {
+            var response = _client.PostAsync($"{_client.BaseAddress}{endPoint}", ObjectToHttpContent(obj)).Result;
             if (response.IsSuccessStatusCode) {
                 var responseContent = response.Content.ReadAsStringAsync().Result;
                 var tokenData = JObject.Parse(responseContent);
@@ -29,27 +29,27 @@ namespace ConsumingApiHelper {
             }
         }
 
-        public (T result, string message) Get<T>(string url) {
-            return GetAssync<T>(url).Result;
+        public (T result, string message) Get<T>(string endPoint) {
+            return GetAssync<T>(endPoint).Result;
         }
 
-        public async Task<(T result, string message)> GetAssync<T>(string url) {
-            var response = await _client.GetAsync(url);
+        public async Task<(T result, string message)> GetAssync<T>(string endPoint) {
+            var response = await _client.GetAsync($"{_client.BaseAddress}{endPoint}");
             return DeserializeResponse<T>(response);
         }
 
-        public (TResult result, string message) Post<T, TResult>(string url, T obj) {
-            var response = _client.PostAsync(url, ObjectToHttpContent(obj)).Result;
+        public (TResult result, string message) Post<T, TResult>(string endPoint, T obj) {
+            var response = _client.PostAsync($"{_client.BaseAddress}{endPoint}", ObjectToHttpContent(obj)).Result;
             return DeserializeResponse<TResult>(response);
         }
 
-        public (TResult result, string message) Put<T, TResult>(string url, T obj) {
-            var response = _client.PutAsync(url, ObjectToHttpContent(obj)).Result;
+        public (TResult result, string message) Put<T, TResult>(string endPoint, T obj) {
+            var response = _client.PutAsync($"{_client.BaseAddress}{endPoint}", ObjectToHttpContent(obj)).Result;
             return DeserializeResponse<TResult>(response);
         }
 
-        public (bool result, string message) Delete(string url) {
-            var response = _client.DeleteAsync(url).Result;
+        public (bool result, string message) Delete(string endPoint) {
+            var response = _client.DeleteAsync($"{_client.BaseAddress}{endPoint}").Result;
             var responseContent = response.Content.ReadAsStringAsync().Result;
             if (response.IsSuccessStatusCode) {
                 return (true, responseContent);
