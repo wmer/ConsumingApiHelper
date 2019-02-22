@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using ConsumingApiHelper.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,9 @@ using System.Threading.Tasks;
 namespace ConsumingApiHelper {
     public class ConsumingApi {
         private HttpClient _client;
+        private Token token;
+        private string loginEndPoint;
+        private object credentials;
 
         public ConsumingApi(string baseAdress) {
             _client = new HttpClient() {
@@ -20,30 +24,50 @@ namespace ConsumingApiHelper {
         }
 
         public void Authenticate(string endPoint, object obj) {
-            var response = _client.PostAsync($"{_client.BaseAddress}{endPoint}", ObjectToHttpContent(obj)).Result;
+            loginEndPoint = endPoint;
+            credentials = obj;
+            var response = _client.PostAsync($"{_client.BaseAddress}{endPoint}", ObjectToHttpContent(credentials)).Result;
             if (response.IsSuccessStatusCode) {
                 var responseContent = response.Content.ReadAsStringAsync().Result;
                 var tokenData = JObject.Parse(responseContent);
-                var token = (string)tokenData["token"];
-                _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                token = new Token { Value = (string)tokenData["token"] };
+                _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Value);
             }
         }
 
-        public (T result, string message) Get<T>(string endPoint) {
+        public bool IsAuthenticated(string endPoint) {
+            var isValidade = false;
+            var result = Post<Token, bool>($"{_client.BaseAddress}{endPoint}", token);
+            isValidade = result.result;
+            return isValidade;
+        }
+
+        public void ReAuthenticate() => Authenticate(loginEndPoint, credentials);
+
+        public ConsumingApi CheckAndReAuthenticate(string endPoint) {
+            var valid = IsAuthenticated(endPoint);
+            if (!valid) {
+                ReAuthenticate();
+            }
+
+            return this;
+        }
+
+        public (T result, string statusCode, string message) Get<T>(string endPoint) {
             return GetAssync<T>(endPoint).Result;
         }
 
-        public async Task<(T result, string message)> GetAssync<T>(string endPoint) {
+        public async Task<(T result, string statusCode, string message)> GetAssync<T>(string endPoint) {
             var response = await _client.GetAsync($"{_client.BaseAddress}{endPoint}");
             return DeserializeResponse<T>(response);
         }
 
-        public (TResult result, string message) Post<T, TResult>(string endPoint, T obj) {
+        public (TResult result, string statusCode, string message) Post<T, TResult>(string endPoint, T obj) {
             var response = _client.PostAsync($"{_client.BaseAddress}{endPoint}", ObjectToHttpContent(obj)).Result;
             return DeserializeResponse<TResult>(response);
         }
 
-        public (TResult result, string message) Put<T, TResult>(string endPoint, T obj) {
+        public (TResult result, string statusCode, string message) Put<T, TResult>(string endPoint, T obj) {
             var response = _client.PutAsync($"{_client.BaseAddress}{endPoint}", ObjectToHttpContent(obj)).Result;
             return DeserializeResponse<TResult>(response);
         }
@@ -58,16 +82,20 @@ namespace ConsumingApiHelper {
             }
         }
 
-        private (T result, string message) DeserializeResponse<T>(HttpResponseMessage response) {
+        private (T result, string statusCode, string message) DeserializeResponse<T>(HttpResponseMessage response) {
             var responseContent = response.Content.ReadAsStringAsync().Result;
+            var statusCode = response.StatusCode.ToString();
             if (response.IsSuccessStatusCode) {
-                return (JsonConvert.DeserializeObject<T>(responseContent), responseContent);
+                return (JsonConvert.DeserializeObject<T>(responseContent), statusCode, responseContent);
             } else {
-                return (default(T), responseContent);
+                return (default(T), statusCode, responseContent);
             }
         }
 
         private HttpContent ObjectToHttpContent(object obj) {
+            if (obj.GetType().IsPrimitive || obj.GetType() == typeof(string) || obj.GetType() == typeof(decimal)) {
+                return new StringContent(obj.ToString());
+            }
             string json = JsonConvert.SerializeObject(obj, Formatting.Indented);
             return new StringContent(json, Encoding.UTF8, "application/json");
         }
