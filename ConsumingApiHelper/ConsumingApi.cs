@@ -1,5 +1,4 @@
-﻿using ConsumingApiHelper.Models;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -11,7 +10,7 @@ using System.Threading.Tasks;
 namespace ConsumingApiHelper {
     public class ConsumingApi {
         private HttpClient _client;
-        private Token token;
+        private string token;
         private string loginEndPoint;
         private object credentials;
 
@@ -30,15 +29,14 @@ namespace ConsumingApiHelper {
             if (response.IsSuccessStatusCode) {
                 var responseContent = response.Content.ReadAsStringAsync().Result;
                 var tokenData = JObject.Parse(responseContent);
-                token = new Token { Value = (string)tokenData["token"] };
-                _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Value);
+                token = (string)tokenData["token"];
+                _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
         }
 
         public bool IsAuthenticated(string endPoint) {
-            var isValidade = false;
-            var result = Post<Token, bool>($"{_client.BaseAddress}{endPoint}", token);
-            isValidade = result.result;
+            var result = Post<string, bool>($"{_client.BaseAddress}{endPoint}", token);
+            bool isValidade = result.result;
             return isValidade;
         }
 
