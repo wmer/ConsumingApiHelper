@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using ConsumingApiHelper.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ namespace ConsumingApiHelper {
         private string token;
         private string loginEndPoint;
         private object credentials;
+        private DateTime expirationToken;
 
         public ConsumingApi(string baseAdress) {
             _client = new HttpClient() {
@@ -22,28 +24,35 @@ namespace ConsumingApiHelper {
             _client.DefaultRequestHeaders.Accept.Add(mediaType);
         }
 
-        public void Authenticate(string endPoint, object obj) {
+        public (bool, TokenInfo) Authenticate(string endPoint, object obj) {
             loginEndPoint = endPoint;
             credentials = obj;
             var response = _client.PostAsync($"{_client.BaseAddress}{endPoint}", ObjectToHttpContent(credentials)).Result;
             if (response.IsSuccessStatusCode) {
                 var responseContent = response.Content.ReadAsStringAsync().Result;
                 var tokenData = JObject.Parse(responseContent);
-                token = (string)tokenData["token"];
+                var tokenInfo = new TokenInfo {
+                    Token = (string)tokenData["token"],
+                    Email = (string)tokenData["userEmail"],
+                    UserName = (string)tokenData["userName"],
+                    CreationDate = DateTime.Parse((string)tokenData["created"]).ToLocalTime(),
+                    ExpirationDate = DateTime.Parse((string)tokenData["expiration"]).ToLocalTime()
+                };
+                token = tokenInfo.Token;
+                expirationToken = tokenInfo.ExpirationDate;
                 _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                return (true, tokenInfo);
             }
+
+            return (false, null);
         }
 
-        public bool IsAuthenticated(string endPoint) {
-            var result = Post<string, bool>($"{_client.BaseAddress}{endPoint}", token);
-            bool isValidade = result.result;
-            return isValidade;
-        }
+        public bool IsAuthenticated() => expirationToken > DateTime.Now;
 
         public void ReAuthenticate() => Authenticate(loginEndPoint, credentials);
 
-        public ConsumingApi CheckAndReAuthenticate(string endPoint) {
-            var valid = IsAuthenticated(endPoint);
+        public ConsumingApi CheckAndReAuthenticate() {
+            var valid = IsAuthenticated();
             if (!valid) {
                 ReAuthenticate();
             }
