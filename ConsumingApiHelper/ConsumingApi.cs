@@ -24,6 +24,8 @@ namespace ConsumingApiHelper {
             _client.DefaultRequestHeaders.Accept.Add(mediaType);
         }
 
+        public HttpClient GetClient() => _client;
+
         public (bool, TokenInfo) Authenticate(string endPoint, object obj) {
             loginEndPoint = endPoint;
             credentials = obj;
@@ -89,7 +91,7 @@ namespace ConsumingApiHelper {
             }
         }
 
-        private (T result, string statusCode, string message) DeserializeResponse<T>(HttpResponseMessage response) {
+        public (T result, string statusCode, string message) DeserializeResponse<T>(HttpResponseMessage response) {
             var responseContent = response.Content.ReadAsStringAsync().Result;
             var statusCode = response.StatusCode.ToString();
             if (response.IsSuccessStatusCode) {
@@ -99,7 +101,7 @@ namespace ConsumingApiHelper {
             }
         }
 
-        private HttpContent ObjectToHttpContent(object obj) {
+        public HttpContent ObjectToHttpContent(object obj) {
             if (obj.GetType().IsPrimitive || obj.GetType() == typeof(string) || obj.GetType() == typeof(decimal)) {
                 return new StringContent(obj.ToString());
             }
